@@ -1,0 +1,67 @@
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+
+// Set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+// Define the analog pin for the smoke sensor
+const int smokeSensorPin = A0;
+
+// Custom characters for bar graph
+byte bar[8][8] = {
+  {0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111},
+  {0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111, 0b11111},
+  {0b00000, 0b00000, 0b00000, 0b00000, 0b00000, 0b11111, 0b11111, 0b11111},
+  {0b00000, 0b00000, 0b00000, 0b00000, 0b11111, 0b11111, 0b11111, 0b11111},
+  {0b00000, 0b00000, 0b00000, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111},
+  {0b00000, 0b00000, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111},
+  {0b00000, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111},
+  {0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111, 0b11111}
+};
+
+void setup() {
+  // Initialize the LCD
+  lcd.begin();
+  lcd.backlight();
+
+  // Initialize the serial communication
+  Serial.begin(9600);
+
+  // Create custom characters for bar graph
+  for (int i = 0; i < 8; i++) {
+    lcd.createChar(i, bar[i]);
+  }
+
+  // Print a message to the LCD
+  lcd.setCursor(0, 0);
+  lcd.print("GAS Level:");
+}
+
+void loop() {
+  // Read the value from the smoke sensor
+  int smokeValue = analogRead(smokeSensorPin);
+
+  // Print the smoke value to the serial monitor
+  Serial.print("GAS Level: ");
+  Serial.println(smokeValue);
+
+  // Display the smoke value on the LCD
+  lcd.setCursor(0, 1);
+  lcd.print(smokeValue);
+  lcd.print("   ");  // Clear any leftover characters
+
+  // Calculate bar length (maximum 16 characters)
+  int barLength = map(smokeValue, 0, 1023, 0, 16);
+
+  // Display the bar graph
+  lcd.setCursor(9, 1);
+  for (int i = 0; i < 16; i++) {
+    if (i < barLength) {
+      lcd.write(byte(7));  // Full bar character
+    } else {
+      lcd.print(" ");  // Empty space
+    }
+  }
+
+  delay(1000); // Wait for a second before the next reading
+}
